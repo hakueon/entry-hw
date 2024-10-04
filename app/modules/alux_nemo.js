@@ -1,6 +1,9 @@
+const {dialog} = require('electron');
+
 function Module() {
     this.soundKeyArray = [30578, 28861, 27241, 25713, 24270, 22908, 21622, 20408, 19263, 18182, 17161, 16198];
     this.ledPixelArray = [0, 0, 0, 0, 0, 0, 0];
+    this.lastfwVersion = 1;
     this.protocol = {
         nemoId: 0x24,
         fwVersion: 0x42,
@@ -175,6 +178,19 @@ Module.prototype.checkInitialData = function(data, config) {
     let isConnected = false;
     if (data.length === this.length.version && data[this.rAddr.cmd0] === this.protocol.fwVersion) {
         this.device.fwVersion = data[this.rAddr.cmd1];
+        console.log("DD ", this.device.fwVersion, );
+        if (this.device.fwVersion !== this.lastfwVersion) {
+            const massage = this.lastfwVersion < this.device.fwVersion
+                    ? `펌웨어 버전이 더 높습니다.\n(The firmware is higher than the latest version.)`
+                    : `'드라이버 설치 2' 버튼을 눌러 펌웨어를 업데이트 해주세요.\n(Please, Click the 'Driver installation 2' button to update the firmware.)`;
+                const version = `\n\n현재(now) : v${this.device.fwVersion}\n최신(latest) : v${this.lastfwVersion}\n`;
+                
+                dialog.showMessageBox({
+                    type: `info`,
+                    title: `펌웨어 버전 확인`,
+                    message: massage + version
+                });
+        }
         isConnected = true;
     }
     return isConnected;
@@ -456,9 +472,7 @@ Module.prototype.parsingIllumination = function(data) {
     this.device.illumi = data[this.rAddr.illumi];
 }
 
-Module.prototype.parsingExPort = function(data) {   
-    
-    
+Module.prototype.parsingExPort = function(data) { 
     // 0: 값, 1: 각도, 2: 절대각도, 3: 회전 수
     const sensor = data[this.rAddr.exPort];
     this.device.exPort = sensor;
